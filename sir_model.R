@@ -18,8 +18,8 @@ sir_model <- function(time, variables, parameters) {
 
 # Define params
 parameters_values <- c(
-  beta  = 1.75, # infectious contact rate (/person/day)
-  gamma = 0.35    # recovery rate (/day)
+  beta  = beta, # infectious contact rate (/person/day)
+  gamma = gamma    # recovery rate (/day)
 )
 
 
