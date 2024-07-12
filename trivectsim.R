@@ -9,29 +9,32 @@
 #     if == then randomly select?
 # 3. Apply upsilon to generate new infections
 # 4. Denote 1 on previous iteration index in V3
+# 5. Tracking using iterates to indicate the individual index it came from (work in progress)
 
-# Parameters
-beta = 0.42 #use 0.175 for small tests
-gamma = 0.35
-N = 1000 
-
-# Populations
-I =   4  # number of infectious at time = 0
-S = N - I
-
-
-vone = integer(I)
-vtwo = rexp(N,1/gamma) #infectiousness profile timing
-vthree = integer(I)
-
-unaccounted = c()
-match = c()
-comptau = c()
-contacts = c()
-
-##simulation <- function(vone, vtwo, vthree){
-  #for (j in 1:N){
-    for (i in 1:length(vthree)) #select index to apply to
+simulation <- function(beta, gamma, N, I){ #iterates only for debugging
+  #population requirements
+  S = N - I
+  
+  #define vectors
+  vone = integer(I) #initial infected
+  vtwo = rexp(N,1/gamma) #infectiousness profile timing
+  inputthree = integer(I) #accounting vector
+  vfour = integer(I) #tracking vector
+  
+  for (k in 1:N){
+    if (k == 1){ # probably a way to eliminate this 
+      vthree = inputthree
+    } else {
+      vthree = vthree
+    }
+    unaccounted = c()
+    match = c()
+    comptau = c()
+    contacts = c()
+    mu = c()
+    
+    #select index to apply to next
+    for (i in 1:length(vthree)){ 
       if (vthree[i] == 0){
         unaccounted[i] <- vone[i]
       } else {
@@ -50,44 +53,50 @@ contacts = c()
               match <- compmatch
             }
         }
-        if (length(match) == 0){
-          break
-       }
-        print(unaccounted)
-        print(comptau)
-        print(match)
-        print(paste0("The k th individual to be evaluated infected at time:", vone[match],"for individual index:", match,"."))
+    }
+    if (length(match) == 0){ #everyone has been accounted for
+      break
+    }
+    if (length(vone) > N){ #exceeding population limit (stop())
+      break
+    }
+        print(paste0("The ", k, "th individual to be evaluated infected at time: ", vone[match]," for individual index: ", match,"."))
   
+        # begin the infection regime
         upsilon = rpois(1,beta/gamma) #number of contacts within the infectiousness period 
-        print(paste0("Upsilon:", upsilon,"for iteration k and individual index:", match,"."))
+        print(paste0("Upsilon: ", upsilon," for iteration ", k, " from individual index: ", match,"."))
         
         if (upsilon == 0){
           #no new contacts
           contacts <- NA
         } else {
           for (j in 1:upsilon){ #iterate over that vector to determine which contacts "stick"
-            print(paste0("The population ratio:", S/N,"."))
             mu[j] <- rbinom(1,1,S/N)
-            print(paste0("The probability of transmission:", mu[j], "for contact number:", j,"from individual index:", match,"."))
+            print(paste0("The probability of transmission: ", mu[j], " for contact number: ", j," from individual index: ", match,"."))
             if (mu[j] == 0){
               #no new contacts
               contacts[j] <- NA
             } else {
               contacts[j] <- vone[match] + vtwo[match]
               S <- S - 1
-              print(paste0("The remaining susceptible population", S, "."))
+              print(paste0("The remaining susceptible population ", S, "."))
             }
           }
         }
 
     contacts <- contacts[!is.na(contacts)] #remove any NA (not successful) contacts
-    #print(paste0("Contacts:", contacts,"for iteration:", i,"resulting from individual:", match,"."))
+    print(paste0("Contacts: ", contacts," for iteration k resulting from individual: ", match,"."))
+    
     addcontacts = length(contacts)
     vone <- c(vone,contacts)
     vthree[match] <- 1
     vthree <- c(vthree,integer(addcontacts))
+    keeptrack = rep(match, times = addcontacts)
+    vfour <- c(vfour,keeptrack)
     
-    ##}
-
-print(vone)
-print(vthree)
+  print(vone)
+  print(vthree)
+  print(vfour)
+    }
+    print(paste0("Simulation ended on iteration ", k, " where there were ", length(vone), " individuals accounted for."))
+}
