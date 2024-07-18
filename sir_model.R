@@ -12,7 +12,8 @@ sir_model <- function(time, variables, parameters) {
     dS <- - (beta * I * S) / N
     dI <-  (beta * I * S) / N - gamma * I
     dR <-  gamma * I
-    return(list(c(dS, dI, dR)))
+    dC <- (beta * I * S) / N
+    return(list(c(dS, dI, dR, dC)))
   })
 }
 
@@ -25,13 +26,14 @@ parameters_values <- c(
 
 # Define init conds
 initial_values <- c(
-  S = 999,  # number of susceptibles at time = 0
-  I =   1,  # number of infectious at time = 0
-  R =   0   # number of recovered (and immune) at time = 0
+  S = 998,  # number of susceptibles at time = 0
+  I =   2,  # number of infectious at time = 0
+  R =   0,   # number of recovered (and immune) at time = 0
+  C =   2
 )
 
 # time structure using by = or length = for stepsize is there a best way to do this?
-time_values <- seq(0, 10, by = 0.1)
+time_values <- seq(0, 10, by = 0.001)
 
 sir_model_solve <- ode(
   y = initial_values,
@@ -42,7 +44,7 @@ sir_model_solve <- ode(
 
 sir_model_solve <- as.data.frame(sir_model_solve)
 
-lambdA <- sir_model_solve$I * Beta
+lambdA <- sir_model_solve$I * beta
 
 newsir_model_solve <- cbind(sir_model_solve,lambdA)
 
@@ -58,6 +60,8 @@ with(newsir_model_solve, {
   lines(time, R, type = "l", col = "green")
   # adding the time series of force of infection
   lines(time, lambdA, type = "l", lty = 2, col = "purple")
+  # adding cumulative number of infections
+  lines(time, C, type = "l", col = "orange")
 })
 
 # adding a legend:
